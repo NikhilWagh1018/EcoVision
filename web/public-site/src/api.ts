@@ -1,0 +1,17 @@
+export interface Rep { name: string; role: "MP" | "MLA" | "corporator"; constituency: string }
+export interface PublicSpot {
+  id: number; lat: number; lon: number; status: "open" | "cleaned" | "disputed";
+  first_reported_at: string; ward: string | null; severity: string | null; representatives: Rep[];
+}
+export interface Stats { open_spots: number; cleaned_spots: number; total_spots: number; verified_cleanups: number }
+export interface SpotPhoto { id: number; kind: "before" | "after"; photo_url: string; captured_at: string }
+
+const get = async <T,>(url: string): Promise<T> => {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(String(r.status));
+  return r.json() as Promise<T>;
+};
+export const fetchSpots = () => get<PublicSpot[]>("/api/v1/public/spots");
+export const fetchStats = () => get<Stats>("/api/v1/public/stats");
+export const fetchPhotos = (id: number) =>
+  get<{ reports: SpotPhoto[] }>(`/api/v1/spots/${id}`).then((d) => d.reports);
