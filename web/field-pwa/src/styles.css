@@ -1,0 +1,52 @@
+:root {
+  --paper: #F1F5F6; --ink: #10262B; --muted: #4C646A; --line: #C9D6D9;
+  --brand: #0B5C63; --brand-ink: #FFFFFF;
+  --ok: #1E7B4A; --warn: #8A5A00; --bad: #B3261E;
+  --radius: 14px;
+  font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink); background: var(--paper);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-size: 18px; line-height: 1.45; }
+h1 { font-size: 1.75rem; line-height: 1.2; margin: 0 0 1rem; }
+p { margin: 0 0 0.75rem; max-width: 60ch; }
+button { font: inherit; cursor: pointer; border: 0; }
+button:focus-visible, input:focus-visible { outline: 3px solid #1565C0; outline-offset: 2px; }
+
+.screen { min-height: 100svh; padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem calc(6.5rem + env(safe-area-inset-bottom)); }
+.muted { color: var(--muted); }
+.error { color: var(--bad); font-weight: 700; }
+.note { background: #E3EEF0; border-left: 5px solid var(--brand); padding: 0.75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; }
+
+.primary, .secondary { min-height: 56px; padding: 0 1.5rem; border-radius: var(--radius); font-weight: 700; font-size: 1.05rem; }
+.primary { background: var(--brand); color: var(--brand-ink); width: 100%; }
+.secondary { background: #fff; color: var(--brand); border: 2px solid var(--brand); }
+.primary:disabled, .secondary:disabled { opacity: 0.5; }
+.link { background: none; color: var(--brand); text-decoration: underline; font-weight: 700; padding: 0; }
+.actions { display: grid; gap: 0.75rem; margin-top: 1rem; }
+
+.spots { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.spots li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+.spots li div { display: grid; }
+.dock { position: fixed; inset: auto 0 0 0; padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
+
+.preview { width: 100%; border-radius: var(--radius); display: block; }
+.checks { list-style: none; padding: 0; margin: 1rem 0 1.5rem; display: grid; gap: 0.5rem; }
+.checks li { padding: 0.75rem 1rem; background: #fff; border-radius: var(--radius); border-left: 6px solid; }
+.checks .pass { border-color: var(--ok); } .checks .pass span { color: var(--ok); font-weight: 700; }
+.checks .fail { border-color: var(--bad); } .checks .fail span { color: var(--bad); font-weight: 700; }
+
+.camera { position: fixed; inset: 0; background: #000; color: #fff; }
+.camera video, .camera .ghost { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.camera .ghost { pointer-events: none; mix-blend-mode: screen; }
+.camera-top { position: absolute; inset: 0 0 auto 0; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem 0.75rem; background: linear-gradient(rgba(0,0,0,.65), transparent); }
+.camera-bottom { position: absolute; inset: auto 0 0 0; display: grid; justify-items: center; gap: 0.75rem; padding: 2rem 1rem calc(1.25rem + env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(0,0,0,.75)); }
+.camera .hint { text-align: center; margin: 0; }
+.camera-error { position: absolute; top: 40%; padding: 0 1.5rem; text-align: center; }
+.chip { background: rgba(255,255,255,.18); color: #fff; padding: 0.5rem 0.9rem; border-radius: 999px; min-height: 44px; font-weight: 700; backdrop-filter: blur(6px); }
+.chip.ok { background: var(--ok); } .chip.warn { background: #8A5A00; }
+.ghost-controls { display: flex; align-items: center; gap: 1rem; }
+.ghost-controls label { display: flex; align-items: center; gap: 0.5rem; }
+.shutter { width: 76px; height: 76px; border-radius: 50%; background: #fff; border: 6px solid rgba(255,255,255,.5); background-clip: padding-box; }
+.shutter:disabled { opacity: 0.35; }
+@media (prefers-reduced-motion: no-preference) { .primary:active, .shutter:active { transform: scale(0.97); } }

@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+storage/*
+!storage/.gitkeep
+api/weights/*.onnx
+node_modules/
+.venv/
+*.ipynb_checkpoints
+*.tsbuildinfo
