@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -13,6 +14,20 @@ class Settings(BaseSettings):
     verify_min_orb_inliers: int = 15
     confidence_threshold: float = 0.60
     clean_coverage_pct: float = 5
+    # Deployed website addresses allowed to call the API, comma-separated (no trailing slash).
+    # Example: https://ecovision-map.pages.dev,https://ecovision-field.pages.dev
+    cors_origins: str = ""
+    # Optional regex for preview URLs, e.g. https://.*\.pages\.dev
+    cors_origin_regex: str = ""
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_psycopg2_driver(cls, v: str) -> str:
+        # Neon/Render hand out postgres:// or postgresql:// URLs; SQLAlchemy needs the driver named.
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg2://" + v[len(prefix):]
+        return v
 
 
 settings = Settings()

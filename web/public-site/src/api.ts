@@ -7,8 +7,11 @@ export interface Stats { open_spots: number; cleaned_spots: number; total_spots:
 export interface SpotPhoto { id: number; kind: "before" | "after"; photo_url: string; captured_at: string }
 export interface WardCount { id: number; name: string; open_spots: number; cleaned_spots: number }
 
+// Empty in local dev (Vite proxies /api). Set VITE_API_URL to the deployed API address in production.
+export const API: string = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+
 const get = async <T,>(url: string): Promise<T> => {
-  const r = await fetch(url);
+  const r = await fetch(`${API}${url}`);
   if (!r.ok) throw new Error(String(r.status));
   return r.json() as Promise<T>;
 };
@@ -16,4 +19,4 @@ export const fetchSpots = () => get<PublicSpot[]>("/api/v1/public/spots");
 export const fetchStats = () => get<Stats>("/api/v1/public/stats");
 export const fetchWards = () => get<WardCount[]>("/api/v1/public/wards");
 export const fetchPhotos = (id: number) =>
-  get<{ reports: SpotPhoto[] }>(`/api/v1/spots/${id}`).then((d) => d.reports);
+  get<{ reports: SpotPhoto[] }>(`/api/v1/spots/${id}`).then((d) => d.reports.map((r) => ({ ...r, photo_url: `${API}${r.photo_url}` })));
