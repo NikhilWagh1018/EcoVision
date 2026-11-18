@@ -1,0 +1,18 @@
+# Render Blueprint: deploys the API from api/Dockerfile on the free plan.
+services:
+  - type: web
+    name: ecovision-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # paste your Neon connection string in the Render dashboard
+      - key: CORS_ORIGINS
+        sync: false          # your two Cloudflare Pages addresses, comma-separated
+      - key: STORAGE_DIR
+        value: /tmp/storage  # free plan has no persistent disk: photos vanish on restart
+      - key: MODEL_DIR
+        value: /code/weights
