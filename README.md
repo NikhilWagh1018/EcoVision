@@ -15,9 +15,10 @@ Run tests without Docker: `cd api && pip install -r requirements.txt && pytest`
 - FastAPI: create report (auto-merges duplicates within 15 m), list/view spots, submit cleanup with the 4 anti-fraud checks, citizen confirm, officer review queue and corrections
 - Verification checks (GPS, timestamp, perceptual hash, ORB) with unit tests
 - Triage score and refill statistics
+- Analytics endpoints for the admin dashboard: `/api/v1/analytics/heatmap` (weighted points, filter by ward and age) and `/api/v1/analytics/summary` (totals, severity mix, verification outcomes, ward ranking, daily trend)
 - Field PWA (web/field-pwa): in-app camera, ghost-overlay after photo, offline queue, verification result screen
 - ML training scripts (classifier, segmenter) and ONNX export
 
 ## Not built yet (see docs/TASKS.md)
-OTP auth, ONNX pre/post-processing (api/app/services/inference.py), ward data, analytics endpoints, PDF/CSV export, the admin dashboard and citizen confirm page.
+OTP auth, ONNX pre/post-processing (api/app/services/inference.py), ward data, PDF/CSV export, the admin dashboard and citizen confirm page.
 Until models exist, every report goes to the review queue so the full flow can be tested.

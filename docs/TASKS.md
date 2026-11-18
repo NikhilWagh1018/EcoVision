@@ -10,7 +10,7 @@
 - [ ] Replace DEV_USER_ID with OTP login + roles
 ## Verification and analytics
 - [ ] Collect staged fraud set (reused, wrong place, edited, partial) to tune the 4 thresholds in .env
-- [ ] Heatmap + summary endpoints (/analytics/heatmap, /analytics/summary)
+- [x] Heatmap + summary endpoints (/api/v1/analytics/heatmap, /api/v1/analytics/summary)
 ## Frontend
 - [x] Scaffold field-pwa; camera + GPS capture; POST /reports (built, needs phone testing over HTTPS)
 - [x] Ghost-overlay camera for the after photo (built, tune opacity and framing on real photos)
