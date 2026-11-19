@@ -1,5 +1,6 @@
 import maplibregl, { GeoJSONSource, Map, Marker } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import "./layout.css";
 import { PublicSpot, SpotPhoto, Stats, WardCount, fetchPhotos, fetchSpots, fetchStats, fetchWards } from "./api";
 
 const BOUNDS: [[number, number], [number, number]] = [[73.7, 18.38], [74.03, 18.73]];
@@ -44,12 +45,27 @@ function toGeoJSON(spots: PublicSpot[]) {
   };
 }
 
+const isDesktop = () => window.matchMedia("(min-width: 900px)").matches;
+const panelPad = () => (isDesktop() ? 360 : 0);
+const NO_PAD = { left: 0, top: 0, right: 0, bottom: 0 };
+const bboxOf = (g: GeoJSON.Geometry): [number, number, number, number] | null => {
+  let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+  const walk = (x: any) => {
+    if (typeof x[0] === "number") { a = Math.min(a, x[0]); c = Math.max(c, x[0]); b = Math.min(b, x[1]); d = Math.max(d, x[1]); }
+    else x.forEach(walk);
+  };
+  if ("coordinates" in g) walk(g.coordinates);
+  return Number.isFinite(a) ? [a, b, c, d] : null;
+};
+type Result = { kind: "ward"; w: WardCount } | { kind: "spot"; s: PublicSpot };
+
 export default function MapPage({ flash, focusSpot }: { flash?: string | null; focusSpot?: number }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<Map | null>(null);
   const userMarker = useRef<Marker | null>(null);
   const cityFC = useRef<GeoJSON.FeatureCollection | null>(null);
   const pcmcFC = useRef<GeoJSON.FeatureCollection | null>(null);
+  const prabhagFC = useRef<GeoJSON.FeatureCollection | null>(null);
   const wardByNum = useRef<Record<number, WardCount>>({});
   const [ready, setReady] = useState(false);
   const [view, setView] = useState<View>("map");
@@ -72,6 +88,7 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
       wardByNum.current = Object.fromEntries(w.map((x) => [wardNum(x.name), x]));
     }).catch(() => undefined);
     fetch("/pmc-city.geojson").then((r) => r.json()).then((j) => (cityFC.current = j)).catch(() => undefined);
+    fetch("/pmc-prabhags.geojson").then((r) => r.json()).then((j) => (prabhagFC.current = j)).catch(() => undefined);
     fetch("/pcmc-boundary.geojson").then((r) => r.json()).then((j) => (pcmcFC.current = j)).catch(() => undefined);
   }, []);
 
@@ -196,7 +213,10 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
       });
       m.on("click", "spots", (e) => {
         const id = e.features?.[0]?.properties?.id;
-        if (id !== undefined) setSelected({ id } as PublicSpot);
+        if (id === undefined) return;
+        setSelected({ id } as PublicSpot);
+        const at = (e.features?.[0]?.geometry as GeoJSON.Point | undefined)?.coordinates as [number, number] | undefined;
+        if (at) m.easeTo({ center: at, padding: { left: panelPad(), top: 0, right: 0, bottom: 0 } });
       });
       for (const l of ["clusters", "spots"]) {
         m.on("mouseenter", l, () => (m.getCanvas().style.cursor = "pointer"));
@@ -236,8 +256,32 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
   const showOnMap = (s: PublicSpot) => {
     setView("map");
     setSelected({ id: s.id } as PublicSpot);
-    setTimeout(() => map.current?.flyTo({ center: [Number(s.lon), Number(s.lat)], zoom: 15 }), 50);
+    setTimeout(() => map.current?.flyTo({ center: [Number(s.lon), Number(s.lat)], zoom: 15, padding: { left: panelPad(), top: 0, right: 0, bottom: 0 } }), 50);
   };
+
+  const [query, setQuery] = useState("");
+  const results = useMemo<Result[]>(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const out: Result[] = [];
+    const n = q.match(/^(?:spot\s*)?#?(\d+)$/);
+    if (n) { const s = spots.find((x) => x.id === Number(n[1])); if (s) out.push({ kind: "spot", s }); }
+    for (const w of wards) if (w.name.toLowerCase().includes(q)) out.push({ kind: "ward", w });
+    return out.slice(0, 6);
+  }, [query, spots, wards]);
+
+  const pick = (r: Result) => {
+    setQuery("");
+    setView("map");
+    if (r.kind === "spot") { showOnMap(r.s); return; }
+    const num = wardNum(r.w.name);
+    const f = prabhagFC.current?.features.find((x) => Number(x.properties?.num) === num);
+    const b = f ? bboxOf(f.geometry) : null;
+    if (b) map.current?.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: { top: 100, bottom: 40, left: (full ? panelPad() : 0) + 40, right: 40 }, maxZoom: 15 });
+    setInfo({ title: r.w.name, sub: "PMC prabhag", extra: `${r.w.open_spots} open · ${r.w.cleaned_spots} cleaned` });
+  };
+
+  const closePanel = () => { setSelected(null); map.current?.easeTo({ padding: NO_PAD, duration: 300 }); };
 
   // Shareable spot link (#/spot/12): open that spot's sheet and fly to it once the data is in
   const focused = useRef(false);
@@ -292,21 +336,31 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
         </div></div>
       </header>
 
-      <div className="filters">
-        <label>Severity
-          <select value={sev} onChange={(e) => setSev(e.target.value)}>
+      <main className={"stage" + (view === "map" && full ? " hasPanel" : "")}>
+        <div className="floatbar">
+          <div className="search">
+            <input type="search" placeholder="Search a ward or spot number" aria-label="Search wards or spots" value={query}
+              onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && results[0]) pick(results[0]); }} />
+            {results.length > 0 && (
+              <ul className="results">
+                {results.map((r) => (
+                  <li key={r.kind === "ward" ? `w${r.w.id}` : `s${r.s.id}`}>
+                    <button onClick={() => pick(r)}>
+                      {r.kind === "ward" ? <><b>{r.w.name}</b><small>Ward · {r.w.open_spots} open</small></> : <><b>Spot {r.s.id}</b><small>{r.s.ward ?? "Not linked to a ward yet"}</small></>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <select value={sev} aria-label="Severity" onChange={(e) => setSev(e.target.value)}>
             <option value="all">All severity</option><option value="severe">Severe</option>
             <option value="moderate">Moderate</option><option value="clean">Clean</option><option value="unrated">Awaiting review</option>
           </select>
-        </label>
-        <label>Status
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select value={status} aria-label="Status" onChange={(e) => setStatus(e.target.value)}>
             <option value="all">All status</option><option value="open">Open</option><option value="cleaned">Cleaned</option>
           </select>
-        </label>
-      </div>
-
-      <main className="stage">
+        </div>
         <div ref={el} className="map" aria-label="Map of waste spots in Pune" style={{ visibility: view === "map" ? "visible" : "hidden" }} />
         {view === "map" && stats && (
           <div className="pill"><b className="red">{stats.open_spots}</b> Active <i /> <b>{stats.total_spots}</b> Reports <i /> <b>{stats.verified_cleanups}</b> Verified</div>
@@ -354,27 +408,56 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
           </ul>
         )}
 
-        {view === "map" && full && (
-          <section className="sheet" aria-live="polite">
-            <button className="close" onClick={() => setSelected(null)} aria-label="Close details">Close</button>
-            <h2>Spot {full.id}</h2>
-            <button className="sharebtn" onClick={() => share(full.id)}>Share</button>
-            <p className="meta">
-              {full.status === "cleaned" ? "Cleaned and verified" : full.severity ? `${SEV_LABEL[full.severity]} waste` : "Waiting for review"}
-              {full.ward ? `, ${full.ward}` : ""}
-            </p>
-            <div className="photos">
-              {before && <figure><img src={before.photo_url} alt="Spot before cleanup" /><figcaption>Reported</figcaption></figure>}
-              {after && <figure><img src={after.photo_url} alt="Spot after cleanup" /><figcaption>After cleanup</figcaption></figure>}
-            </div>
-            <h3>Responsible representatives</h3>
-            {full.representatives.length === 0 ? (
-              <p className="muted">Not linked yet. Ward and representative data is still being added.</p>
-            ) : (
-              <ul>{full.representatives.map((r) => <li key={r.name + r.role}><strong>{r.name}</strong>, {r.role} for {r.constituency}</li>)}</ul>
-            )}
-          </section>
-        )}
+        {view === "map" && full && (() => {
+          const st = stateOf(full);
+          const isOpen = full.status !== "cleaned";
+          const days = Math.max(0, Math.floor((Date.now() - new Date(full.first_reported_at).getTime()) / 86400000));
+          const wardRec = full.ward ? wards.find((w) => w.name === full.ward) : undefined;
+          const sevText = st === "cleaned" ? "Cleaned" : st === "unrated" ? "Awaiting review" : SEV_LABEL[st] ?? st;
+          const link = `${location.origin}${location.pathname}#/spot/${full.id}`;
+          const tweet = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Garbage spot ${full.id}${full.ward ? ` in ${full.ward}` : ""}, Pune, has been open for ${days} days.`)}&url=${encodeURIComponent(link)}`;
+          return (
+            <section className="sheet" aria-live="polite">
+              <div className="shead">
+                <span className="badge"><i style={{ background: SEV_COLOR[st] ?? "#5B6B70" }} />{sevText} · {isOpen ? "Unresolved" : "Resolved"}</span>
+                <span className="hbtns">
+                  <button className="iconbtn" onClick={() => share(full.id)} aria-label="Share this spot">Share</button>
+                  <button className="iconbtn" onClick={closePanel} aria-label="Close details">✕</button>
+                </span>
+              </div>
+              <div className="sbody">
+                <div className="photos">
+                  {before && <figure><img src={before.photo_url} alt="Spot before cleanup" /><figcaption>Reported</figcaption></figure>}
+                  {after && <figure><img src={after.photo_url} alt="Spot after cleanup" /><figcaption>After cleanup</figcaption></figure>}
+                  {!before && !after && <p className="muted">No photo to show yet.</p>}
+                </div>
+                <h2>{full.ward ?? `Spot ${full.id}`}</h2>
+                <p className="meta">Spot {full.id} · <a href={`https://www.google.com/maps/dir/?api=1&destination=${full.lat},${full.lon}`} target="_blank" rel="noreferrer">Get directions</a></p>
+                <div className="facts">
+                  <div><b>{isOpen ? days : "–"}</b><small>Days open</small></div>
+                  <div><b>{new Date(full.first_reported_at).toLocaleDateString()}</b><small>First reported</small></div>
+                  <div><b>{sevText}</b><small>Severity</small></div>
+                </div>
+                {isOpen && (
+                  <div className="callout">
+                    <span className="big">{days} days open</span>
+                    <p>Posting it publicly keeps it in front of the civic body and your neighbours.</p>
+                    <a className="xbtn" href={tweet} target="_blank" rel="noreferrer">Post on X</a>
+                  </div>
+                )}
+                <h3>Know your ward</h3>
+                <p className="meta">{full.ward ?? "Not linked to a ward yet"}{wardRec && <> · <a href={`#/ward/${wardRec.id}`}>See the ward page</a></>}</p>
+                <h3>Elected representatives</h3>
+                {full.representatives.length === 0 ? (
+                  <p className="muted">Not linked yet. Ward and representative data is still being added.</p>
+                ) : (
+                  <ul className="reps">{full.representatives.map((r) => <li key={r.name + r.role}><strong>{r.name}</strong><small>{r.role} · {r.constituency}</small></li>)}</ul>
+                )}
+              </div>
+              {isOpen && <div className="sfoot"><a className="verify" href={`#/cleanup/${full.id}`}>Verify cleanup</a></div>}
+            </section>
+          );
+        })()}
       </main>
 
       <a className="report" href="#/report">Report a waste spot</a>

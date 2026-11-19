@@ -8,6 +8,7 @@ import "./field/field.css";
 //   #/            map (landing page)      #/spot/12   map focused on spot 12
 //   #/report      report a spot           #/wards     ward leaderboard
 //   #/field       field-worker list       #/ward/12   one ward
+//   #/cleanup/12  record a cleanup for spot 12
 const routeOf = () => location.hash.replace(/^#\/?/, "").split("?")[0];
 
 export default function App() {
@@ -24,6 +25,11 @@ export default function App() {
 
   if (route === "report") return <Field key="report" start="report" onExit={goMap} />;
   if (route === "field") return <Field key="field" start="spots" onExit={goMap} />;
+  const cleanup = route.match(/^cleanup\/(\d+)$/);
+  if (cleanup) {
+    const id = Number(cleanup[1]);
+    return <Field key={route} start="cleanup" spotId={id} onExit={(n) => { setFlash(n ?? null); location.hash = `/spot/${id}`; }} />;
+  }
   if (route === "wards") return <WardsPage />;
   const ward = route.match(/^ward\/(\d+)$/);
   if (ward) return <WardPage key={route} id={Number(ward[1])} />;

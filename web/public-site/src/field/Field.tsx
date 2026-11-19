@@ -6,10 +6,13 @@ import { flushQueue, readQueue } from "./queue";
 type Screen = { name: "spots" } | { name: "report" } | { name: "cleanup"; spot: Spot };
 
 /** start "report": citizen flow, returns to the map when done. start "spots": field-worker list with cleanups. */
-interface Props { start: "report" | "spots"; onExit: (note?: string) => void }
+interface Props { start: "report" | "spots" | "cleanup"; spotId?: number; onExit: (note?: string) => void }
 
-export default function Field({ start, onExit }: Props) {
-  const [screen, setScreen] = useState<Screen>(start === "report" ? { name: "report" } : { name: "spots" });
+export default function Field({ start, spotId, onExit }: Props) {
+  const [screen, setScreen] = useState<Screen>(
+    start === "report" ? { name: "report" }
+      : start === "cleanup" && spotId ? { name: "cleanup", spot: { id: spotId } as Spot }
+      : { name: "spots" });
   const [spots, setSpots] = useState<Spot[] | null>(null);
   const [here, setHere] = useState<{ lat: number; lon: number } | null>(null);
   const [queued, setQueued] = useState(0);
@@ -38,7 +41,7 @@ export default function Field({ start, onExit }: Props) {
   }, [sync]);
 
   const done = (n?: string) => {
-    if (start === "report") { onExit(n); return; }
+    if (start !== "spots") { onExit(n); return; }
     setNote(n ?? null); setScreen({ name: "spots" }); refresh();
   };
 
