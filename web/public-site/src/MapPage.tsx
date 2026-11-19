@@ -329,6 +329,7 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
       <header className="bar">
         <h1>EcoVision <span>Pune</span></h1>
         <div className="barright">
+        <a className="navlink" href="#/know">Your ward</a>
         <a className="navlink" href="#/wards">Wards</a>
         <div className="seg" role="tablist" aria-label="View">
           <button role="tab" aria-selected={view === "map"} className={view === "map" ? "on" : ""} onClick={() => setView("map")}>Map</button>
