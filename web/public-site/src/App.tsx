@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import MapPage from "./MapPage";
 import Field from "./field/Field";
 import { WardPage, WardsPage } from "./WardPages";
+import { KnowListPage, KnowPage } from "./KnowYourWard";
 import "./field/field.css";
 
 // Hash routes (work on any static host, no rewrite rules needed):
@@ -9,6 +10,7 @@ import "./field/field.css";
 //   #/report      report a spot           #/wards     ward leaderboard
 //   #/field       field-worker list       #/ward/12   one ward
 //   #/cleanup/12  record a cleanup for spot 12
+//   #/know        know your ward (41 prabhags)   #/know/12  one prabhag
 const routeOf = () => location.hash.replace(/^#\/?/, "").split("?")[0];
 
 export default function App() {
@@ -31,6 +33,9 @@ export default function App() {
     return <Field key={route} start="cleanup" spotId={id} onExit={(n) => { setFlash(n ?? null); location.hash = `/spot/${id}`; }} />;
   }
   if (route === "wards") return <WardsPage />;
+  if (route === "know") return <KnowListPage />;
+  const know = route.match(/^know\/(\d+)$/);
+  if (know) return <KnowPage key={route} n={Number(know[1])} />;
   const ward = route.match(/^ward\/(\d+)$/);
   if (ward) return <WardPage key={route} id={Number(ward[1])} />;
   const spot = route.match(/^spot\/(\d+)$/);
