@@ -48,3 +48,13 @@
 .kt-av { width:46px; height:46px; border-radius:50%; object-fit:cover; display:grid; place-items:center; font-weight:700; font-size:.9rem; background:#DCE9EB; margin-bottom:2px; }
 .kt-av.ghost { background:#fff; border:1.5px dashed var(--line); color:var(--muted); }
 .kt-node.gap { opacity:.9; }
+
+/* Tree inside the spot panel */
+.kt-title { margin:0 0 10px; text-align:center; font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+.kt-rootsub { color:var(--muted) !important; max-width:220px; text-align:center; }
+.kt-pick { width:100%; padding:0 0 18px; }
+.kt-select { display:grid; gap:4px; font-size:.78rem; color:var(--muted); text-align:left; }
+.kt-select select { font:inherit; font-size:.85rem; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:8px; min-height:40px; background:#fff; width:100%; }
+.kt-change { font-size:.8rem; color:var(--muted); margin:8px 0 4px; display:grid; gap:6px; }
+.kt-change a { color:var(--brand); font-weight:700; }
+.sheet .kt { padding:12px 6px 6px; margin-top:14px; }
