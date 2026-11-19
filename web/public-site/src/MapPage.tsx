@@ -1,3 +1,4 @@
+import { SpotAccountability } from "./KnowYourWard";
 import maplibregl, { GeoJSONSource, Map, Marker } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./layout.css";
@@ -446,14 +447,8 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
                     <a className="xbtn" href={tweet} target="_blank" rel="noreferrer">Post on X</a>
                   </div>
                 )}
-                <h3>Know your ward</h3>
-                <p className="meta">{full.ward ?? "Not linked to a ward yet"}{wardRec && <> · <a href={`#/ward/${wardRec.id}`}>See the ward page</a></>}</p>
-                <h3>Elected representatives</h3>
-                {full.representatives.length === 0 ? (
-                  <p className="muted">Not linked yet. Ward and representative data is still being added.</p>
-                ) : (
-                  <ul className="reps">{full.representatives.map((r) => <li key={r.name + r.role}><strong>{r.name}</strong><small>{r.role} · {r.constituency}</small></li>)}</ul>
-                )}
+                <SpotAccountability key={full.id} wardName={full.ward} />
+                {wardRec && <p className="meta"><a href={`#/ward/${wardRec.id}`}>See all spots in {full.ward}</a></p>}
               </div>
               {isOpen && <div className="sfoot"><a className="verify" href={`#/cleanup/${full.id}`}>Verify cleanup</a></div>}
             </section>
