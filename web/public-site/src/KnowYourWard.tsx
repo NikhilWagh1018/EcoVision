@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { COMMITTEES, DATA_NOTES, LEADERS, PARTY, PMC_CONTACT, PRABHAGS, PartyCode, Prabhag } from "./data/pmc2026";
 import { Top } from "./WardPages";
+import { SUGGEST_2026 } from "./data/wardMap";
 import "./know.css";
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
@@ -70,12 +71,12 @@ function Node({ id, name, role, sub, tint, gap }: { id: string; name?: string; r
   );
 }
 
-function WardTree({ p, chairs }: { p: Prabhag; chairs: typeof COMMITTEES }) {
+function WardTree({ p, chairs, label, sub, picker }: { p: Prabhag | null; chairs: typeof COMMITTEES; label?: string; sub?: string; picker?: React.ReactNode }) {
   const L = Object.fromEntries(LEADERS.map((l) => [l.id, l]));
   return (
     <section className="kt" aria-label="Who is responsible for this prabhag">
       <h3 className="kt-title">Know your ward</h3>
-      <div className="kt-root"><small>Your ward</small><b>Prabhag {p.n}</b></div>
+      <div className="kt-root"><small>Your ward</small><b>{label ?? (p ? `Prabhag ${p.n}` : "Pick your prabhag")}</b>{sub && <small className="kt-rootsub">{sub}</small>}</div>
       <div className="kt-cols">
         <div className="kt-col">
           <h4>Officers</h4>
@@ -88,8 +89,9 @@ function WardTree({ p, chairs }: { p: Prabhag; chairs: typeof COMMITTEES }) {
         <div className="kt-col elected">
           <h4>Elected</h4>
           <Node id="mayor" name={L.mayor.name} role="Mayor" sub="BJP" tint={PARTY.B.color} />
-          {chairs.map((c) => <Node key={c.office} id={`chair-${p.n}`} name={c.chair} role="Ward committee chair" sub={`${c.office} ward office`} tint="#5C6F73" />)}
-          {p.members.map((m) => (
+          {!p && <div className="kt-pick">{picker}</div>}
+          {p && chairs.map((c) => <Node key={c.office} id={`chair-${p!.n}`} name={c.chair} role="Ward committee chair" sub={`${c.office} ward office`} tint="#5C6F73" />)}
+          {p && p.members.map((m) => (
             <Node key={m.seat} id={`c-${p.n}-${m.seat}`} name={m.name} tint={PARTY[m.party].color}
               role={`Corporator · seat ${m.seat}`}
               sub={<><PartyChip code={m.party} />{m.name === "Manjusha Deepak Nagpure" && <em className="kw-tag">Mayor</em>}{m.name === "Parshuram Balkrishna Wadekar" && <em className="kw-tag">Deputy Mayor</em>}</>} />
@@ -97,6 +99,36 @@ function WardTree({ p, chairs }: { p: Prabhag; chairs: typeof COMMITTEES }) {
         </div>
       </div>
     </section>
+  );
+}
+
+// The tree inside a reported spot's side panel. wardName is the 2022-map ward the spot fell in, e.g. "46 Mohammad wadi - Uruli Devachi".
+export function SpotAccountability({ wardName }: { wardName: string | null }) {
+  const num = wardName ? Number(wardName.match(/^(\d+)/)?.[1]) : NaN;
+  const suggested = SUGGEST_2026[num] ?? [];
+  const [pick, setPick] = useState<number | null>(suggested.length === 1 ? suggested[0] : null);
+  const p = PRABHAGS.find((x) => x.n === pick) ?? null;
+  const chairs = p ? COMMITTEES.filter((c) => c.prabhag === p.n) : [];
+  const options = [...suggested, ...PRABHAGS.map((x) => x.n).filter((n) => !suggested.includes(n))];
+  const picker = (
+    <label className="kt-select">
+      <span>{suggested.length > 1 ? "This area spans more than one prabhag. Pick yours:" : "Pick your prabhag:"}</span>
+      <select value={pick ?? ""} onChange={(e) => setPick(e.target.value ? Number(e.target.value) : null)}>
+        <option value="">Choose…</option>
+        {options.map((n) => <option key={n} value={n}>{n} · {PRABHAGS[n - 1].name}</option>)}
+      </select>
+    </label>
+  );
+  return (
+    <>
+      <WardTree p={p} chairs={chairs} label={p ? `Prabhag ${p.n}` : undefined} sub={p ? p.name : (wardName ?? undefined)} picker={picker} />
+      {p && (
+        <div className="kt-change">
+          {suggested.length > 0 ? "Matched by area name. " : ""}Not your prabhag? {picker}
+          <a href={`#/know/${p.n}`}>Full details</a>
+        </div>
+      )}
+    </>
   );
 }
 
