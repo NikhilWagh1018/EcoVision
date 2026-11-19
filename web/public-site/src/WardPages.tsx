@@ -11,11 +11,12 @@ const rateOf = (w: WardCount) => {
   return t ? Math.round((Number(w.cleaned_spots) * 100) / t) : null;
 };
 
-function Top() {
+export function Top() {
   return (
     <header className="bar">
       <h1><a className="home" href="#/">EcoVision <span>Pune</span></a></h1>
       <div className="barright">
+        <a className="navlink" href="#/know">Your ward</a>
         <a className="navlink" href="#/wards">Wards</a>
         <a className="navlink on" href="#/">Map</a>
       </div>
@@ -113,7 +114,7 @@ export function WardPage({ id }: { id: number }) {
         {ward && (
           <>
             <h2>{ward.name}</h2>
-            <p className="wp-sub">PMC prabhag · ranked {rank} of {wards!.length} by open spots</p>
+            <p className="wp-sub">PMC prabhag · ranked {rank} of {wards!.length} by open spots · <a href="#/know">Find your corporators</a></p>
             <div className="wp-stats">
               <div><b className={Number(ward.open_spots) > 0 ? "red" : ""}>{ward.open_spots}</b><span>open</span></div>
               <div><b>{ward.cleaned_spots}</b><span>cleaned</span></div>
