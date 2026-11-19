@@ -47,6 +47,59 @@ function share(title: string) {
   else navigator.clipboard?.writeText(url).then(() => alert("Link copied"), () => undefined);
 }
 
+
+// Photos: put a square image at public/people/<id>.jpg (ids: mayor, commissioner, addl-commissioner-swm, or c-<prabhag>-<seat>).
+function Avatar({ id, name, tint }: { id: string; name: string; tint?: string }) {
+  const [bad, setBad] = useState(false);
+  const initials = name.replace(/\(.*?\)/g, "").replace(/^(Dr|Adv|Shri)\.?\s+/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  return bad ? (
+    <span className="kt-av" style={{ background: tint ?? "#DCE9EB", color: tint ? "#fff" : "var(--brand)" }} aria-hidden="true">{initials}</span>
+  ) : (
+    <img className="kt-av" src={`/people/${id}.jpg`} alt="" onError={() => setBad(true)} />
+  );
+}
+
+function Node({ id, name, role, sub, tint, gap }: { id: string; name?: string; role: string; sub?: React.ReactNode; tint?: string; gap?: string }) {
+  return (
+    <div className={gap ? "kt-node gap" : "kt-node"}>
+      {gap ? <span className="kt-av ghost" aria-hidden="true">?</span> : <Avatar id={id} name={name ?? "?"} tint={tint} />}
+      <b>{gap ?? name}</b>
+      <span className="kt-role">{role}</span>
+      {sub && <span className="kt-sub">{sub}</span>}
+    </div>
+  );
+}
+
+function WardTree({ p, chairs }: { p: Prabhag; chairs: typeof COMMITTEES }) {
+  const L = Object.fromEntries(LEADERS.map((l) => [l.id, l]));
+  return (
+    <section className="kt" aria-label="Who is responsible for this prabhag">
+      <h3 className="kt-title">Know your ward</h3>
+      <div className="kt-root"><small>Your ward</small><b>Prabhag {p.n}</b></div>
+      <div className="kt-cols">
+        <div className="kt-col">
+          <h4>Officers</h4>
+          <Node id="commissioner" name={L.commissioner.name} role="Municipal Commissioner" sub="PMC" />
+          <Node id="addl-commissioner-swm" name={L["addl-commissioner-swm"].name} role="Additional Commissioner" sub="Solid Waste Management" />
+          <Node id="dmc" gap="Name not listed yet" role="Deputy Commissioner" sub="Your zone" />
+          <Node id="amc" gap="Name not listed yet" role="Assistant Municipal Commissioner" sub={<a href={PMC_CONTACT.wardOffices} target="_blank" rel="noopener noreferrer">Ward office contacts</a>} />
+          <Node id="hi" gap="Name not listed yet" role="Health inspector" sub="Ward garbage officer. Start here" />
+        </div>
+        <div className="kt-col elected">
+          <h4>Elected</h4>
+          <Node id="mayor" name={L.mayor.name} role="Mayor" sub="BJP" tint={PARTY.B.color} />
+          {chairs.map((c) => <Node key={c.office} id={`chair-${p.n}`} name={c.chair} role="Ward committee chair" sub={`${c.office} ward office`} tint="#5C6F73" />)}
+          {p.members.map((m) => (
+            <Node key={m.seat} id={`c-${p.n}-${m.seat}`} name={m.name} tint={PARTY[m.party].color}
+              role={`Corporator · seat ${m.seat}`}
+              sub={<><PartyChip code={m.party} />{m.name === "Manjusha Deepak Nagpure" && <em className="kw-tag">Mayor</em>}{m.name === "Parshuram Balkrishna Wadekar" && <em className="kw-tag">Deputy Mayor</em>}</>} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function KnowListPage() {
   const [q, setQ] = useState("");
   const shown = useMemo(() => {
@@ -144,30 +197,7 @@ export function KnowPage({ n }: { n: number }) {
           <button className="kw-btn alt" onClick={() => share(`Prabhag ${p.n} ${p.name}: your corporators`)}>Share</button>
         </div>
 
-        <h3>Your corporators</h3>
-        <ul className="kw-people">
-          {p.members.map((m) => (
-            <li key={m.seat}>
-              <small>Seat {m.seat}</small>
-              <b>{m.name}</b>
-              <span><PartyChip code={m.party} />{m.name === "Manjusha Deepak Nagpure" && <em className="kw-tag">Mayor</em>}{m.name === "Parshuram Balkrishna Wadekar" && <em className="kw-tag">Deputy Mayor</em>}</span>
-            </li>
-          ))}
-        </ul>
-
-        {chairs.length > 0 && (
-          <>
-            <h3>Ward committee</h3>
-            <ul className="kw-people">
-              {chairs.map((c) => <li key={c.office}><small>{c.office} ward office</small><b>{c.chair}</b><span className="kw-muted">Chair of the ward committee</span></li>)}
-            </ul>
-          </>
-        )}
-
-        <h3>Above them</h3>
-        <ul className="kw-people">
-          {LEADERS.filter((l) => l.role !== "Deputy Mayor").map((l) => <li key={l.role}><small>{l.role}</small><b>{l.name}</b></li>)}
-        </ul>
+        <WardTree p={p} chairs={chairs} />
 
         <Contact context="Garbage not lifted? Say your prabhag number and the nearest landmark, and quote the EcoVision spot number if there is one." />
 

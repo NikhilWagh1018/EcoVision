@@ -1168,13 +1168,13 @@ export const COMMITTEES: Committee[] = [
  }
 ];
 
-export interface Leader { role: string; name: string; note: string }
+export interface Leader { id: string; role: string; name: string; note: string }
 // City-level office holders, from news reports and the PMC page on Wikipedia (dates in the note).
 export const LEADERS: Leader[] = [
-  { role: "Mayor", name: "Manjusha Nagpure", note: "BJP, elected unopposed in February 2026 (corporator, prabhag 35)" },
-  { role: "Deputy Mayor", name: "Parshuram Wadekar", note: "RPI (A), corporator, prabhag 8" },
-  { role: "Municipal Commissioner", name: "Naval Kishore Ram, IAS", note: "Took charge on 31 May 2025" },
-  { role: "Additional Commissioner (Estate)", name: "Prajit Nair, IAS", note: "Holds Solid Waste Management, per the April 2026 reshuffle" },
+  { id: "mayor", role: "Mayor", name: "Manjusha Nagpure", note: "BJP, elected unopposed in February 2026 (corporator, prabhag 35)" },
+  { id: "deputy-mayor", role: "Deputy Mayor", name: "Parshuram Wadekar", note: "RPI (A), corporator, prabhag 8" },
+  { id: "commissioner", role: "Municipal Commissioner", name: "Naval Kishore Ram, IAS", note: "Took charge on 31 May 2025" },
+  { id: "addl-commissioner-swm", role: "Additional Commissioner (Estate)", name: "Prajit Nair, IAS", note: "Holds Solid Waste Management, per the April 2026 reshuffle" },
 ];
 
 // How to reach PMC. The toll-free and WhatsApp numbers are as reported by Free Press Journal on 23 Feb 2024.
