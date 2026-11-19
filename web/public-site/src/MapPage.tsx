@@ -44,7 +44,7 @@ function toGeoJSON(spots: PublicSpot[]) {
   };
 }
 
-export default function MapPage({ flash }: { flash?: string | null }) {
+export default function MapPage({ flash, focusSpot }: { flash?: string | null; focusSpot?: number }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<Map | null>(null);
   const userMarker = useRef<Marker | null>(null);
@@ -239,6 +239,23 @@ export default function MapPage({ flash }: { flash?: string | null }) {
     setTimeout(() => map.current?.flyTo({ center: [Number(s.lon), Number(s.lat)], zoom: 15 }), 50);
   };
 
+  // Shareable spot link (#/spot/12): open that spot's sheet and fly to it once the data is in
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focusSpot || focused.current || !ready || spots.length === 0) return;
+    focused.current = true;
+    const s = spots.find((x) => x.id === focusSpot);
+    if (s) showOnMap(s); else setNote(`Spot ${focusSpot} was not found`);
+  }, [focusSpot, ready, spots]);
+
+  const share = async (id: number) => {
+    const url = `${location.origin}${location.pathname}#/spot/${id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: `EcoVision Pune: spot ${id}`, url });
+      else { await navigator.clipboard.writeText(url); setNote("Link copied"); }
+    } catch { /* share cancelled */ }
+  };
+
   // Locate button: tells people when they are outside Pune. Test with ?fakeLoc=19.07,72.87 (Mumbai)
   const locate = () => {
     const done = (lat: number, lon: number) => {
@@ -267,10 +284,12 @@ export default function MapPage({ flash }: { flash?: string | null }) {
     <div className="app">
       <header className="bar">
         <h1>EcoVision <span>Pune</span></h1>
+        <div className="barright">
+        <a className="navlink" href="#/wards">Wards</a>
         <div className="seg" role="tablist" aria-label="View">
           <button role="tab" aria-selected={view === "map"} className={view === "map" ? "on" : ""} onClick={() => setView("map")}>Map</button>
           <button role="tab" aria-selected={view === "list"} className={view === "list" ? "on" : ""} onClick={() => setView("list")}>List</button>
-        </div>
+        </div></div>
       </header>
 
       <div className="filters">
@@ -339,6 +358,7 @@ export default function MapPage({ flash }: { flash?: string | null }) {
           <section className="sheet" aria-live="polite">
             <button className="close" onClick={() => setSelected(null)} aria-label="Close details">Close</button>
             <h2>Spot {full.id}</h2>
+            <button className="sharebtn" onClick={() => share(full.id)}>Share</button>
             <p className="meta">
               {full.status === "cleaned" ? "Cleaned and verified" : full.severity ? `${SEV_LABEL[full.severity]} waste` : "Waiting for review"}
               {full.ward ? `, ${full.ward}` : ""}
