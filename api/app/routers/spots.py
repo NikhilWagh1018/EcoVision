@@ -9,7 +9,7 @@ from ..config import settings
 from ..db import get_db
 from ..services import inference
 from ..services.verification import compute_phash, run_checks
-from ..storage import save_upload
+from ..storage import restore_photo, save_upload
 from .reports import DEV_USER_ID, audit, store_prediction
 
 router = APIRouter(prefix="/api/v1", tags=["spots"])
@@ -77,6 +77,7 @@ def submit_cleanup(
     if not spot or not before:
         raise HTTPException(404, "spot or its before-photo not found")
 
+    restore_photo(before["photo_path"])  # the disk may have been wiped by a restart since the report
     received_at = datetime.now(timezone.utc)
     path = save_upload(photo, "cleanups")
     phash = compute_phash(path)

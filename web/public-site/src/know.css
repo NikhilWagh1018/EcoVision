@@ -58,3 +58,17 @@
 .kt-change { font-size:.8rem; color:var(--muted); margin:8px 0 4px; display:grid; gap:6px; }
 .kt-change a { color:var(--brand); font-weight:700; }
 .sheet .kt { padding:12px 6px 6px; margin-top:14px; }
+
+/* Panel actions: WhatsApp / call PMC, I saw this too, Not garbage? */
+.callbtns { display:grid; grid-template-columns:1fr; gap:8px; margin:10px 0 0; }
+.callout .xbtn.dark { background:#1B7F4A; }
+.callout .xbtn + .xbtn { margin-top:8px; } .callbtns .xbtn + .xbtn { margin-top:0; }
+.callout .callbtns + .xbtn { background:#fff; color:#111; border:1px solid var(--line); }
+.callbtns .xbtn:not(.dark) { background:#fff; color:#111; border:1px solid var(--line); }
+.meta.seen { margin:10px 0 6px; }
+.seebtn { width:100%; min-height:44px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--brand); font:inherit; font-weight:700; cursor:pointer; }
+.seebtn:disabled, .notg:disabled { opacity:.6; cursor:default; }
+.sigmsg { margin:8px 0 0; font-size:.85rem; color:var(--brand); font-weight:700; }
+.disputed { margin:8px 0; padding:8px 10px; border-radius:10px; background:#FFF3BF; color:#664D03; font-size:.85rem; }
+.sfoot.two { display:grid; grid-template-columns:1fr 2fr; gap:8px; }
+.notg { min-height:48px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--ink); font:inherit; font-weight:700; cursor:pointer; }

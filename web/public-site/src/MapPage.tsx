@@ -2,7 +2,8 @@ import { SpotAccountability } from "./KnowYourWard";
 import maplibregl, { GeoJSONSource, Map, Marker } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./layout.css";
-import { PublicSpot, SpotPhoto, Stats, WardCount, fetchPhotos, fetchSpots, fetchStats, fetchWards } from "./api";
+import { PublicSpot, SpotPhoto, Stats, WardCount, fetchPhotos, fetchSpots, fetchStats, fetchWards, rememberSignal, sendSignal, signalsDone } from "./api";
+import { PMC_CONTACT } from "./data/pmc2026";
 
 const BOUNDS: [[number, number], [number, number]] = [[73.7, 18.38], [74.03, 18.73]];
 const SEV_LABEL: Record<string, string> = { clean: "Clean", moderate: "Moderate", severe: "Severe" };
@@ -71,6 +72,20 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
   const [ready, setReady] = useState(false);
   const [view, setView] = useState<View>("map");
   const [spots, setSpots] = useState<PublicSpot[]>([]);
+  const [done, setDone] = useState<string[]>(signalsDone);
+  const [sigMsg, setSigMsg] = useState<string | null>(null);
+  const signal = async (id: number, kind: "seen" | "not-garbage") => {
+    if (kind === "not-garbage" && !window.confirm("Say this is not garbage? A reviewer will check it if a few people agree.")) return;
+    try {
+      const r = await sendSignal(id, kind);
+      rememberSignal(`${kind}:${id}`); setDone(signalsDone());
+      setSpots((all) => all.map((x) => (x.id === id ? { ...x, seen_count: r.seen_count, not_garbage_count: r.not_garbage_count, status: r.disputed ? "disputed" : x.status } : x)));
+      setSigMsg(kind === "seen" ? "Thanks, we have counted you." : "Thanks, noted.");
+    } catch (e) {
+      setSigMsg((e as Error).message === "503" ? "This feature is not switched on yet." : "Could not send that. Try again in a minute.");
+    }
+    setTimeout(() => setSigMsg(null), 3500);
+  };
   const [wards, setWards] = useState<WardCount[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
@@ -443,14 +458,33 @@ export default function MapPage({ flash, focusSpot }: { flash?: string | null; f
                 {isOpen && (
                   <div className="callout">
                     <span className="big">{days} days open</span>
-                    <p>Posting it publicly keeps it in front of the civic body and your neighbours.</p>
+                    <p>Tell PMC directly, then post it publicly so the civic body and your neighbours see it.</p>
+                    <div className="callbtns">
+                      <a className="xbtn dark" href={`${PMC_CONTACT.whatsappLink}?text=${encodeURIComponent(`Garbage spot ${full.id}${full.ward ? ` in ${full.ward}` : ""}, Pune, open for ${days} days. Location: https://www.google.com/maps?q=${full.lat},${full.lon} Details: ${link}`)}`} target="_blank" rel="noreferrer">WhatsApp PMC</a>
+                      <a className="xbtn" href={`tel:${PMC_CONTACT.tollFreeTel}`}>Call PMC {PMC_CONTACT.tollFree}</a>
+                    </div>
                     <a className="xbtn" href={tweet} target="_blank" rel="noreferrer">Post on X</a>
                   </div>
                 )}
+                <p className="meta seen">Seen by {1 + (full.seen_count ?? 0)} {1 + (full.seen_count ?? 0) === 1 ? "person" : "people"}</p>
+                {full.status === "disputed" && <p className="disputed" role="status">{full.not_garbage_count ?? 0} people say this is not garbage. A reviewer will check it.</p>}
+                {isOpen && (
+                  <button className="seebtn" disabled={done.includes(`seen:${full.id}`)} onClick={() => signal(full.id, "seen")}>
+                    {done.includes(`seen:${full.id}`) ? "You saw this too" : "I saw this too"}
+                  </button>
+                )}
+                {sigMsg && <p className="sigmsg" role="status">{sigMsg}</p>}
                 <SpotAccountability key={full.id} wardName={full.ward} />
                 {wardRec && <p className="meta"><a href={`#/ward/${wardRec.id}`}>See all spots in {full.ward}</a></p>}
               </div>
-              {isOpen && <div className="sfoot"><a className="verify" href={`#/cleanup/${full.id}`}>Verify cleanup</a></div>}
+              {isOpen && (
+                <div className="sfoot two">
+                  <button className="notg" disabled={done.includes(`not-garbage:${full.id}`)} onClick={() => signal(full.id, "not-garbage")}>
+                    {done.includes(`not-garbage:${full.id}`) ? "Noted" : "Not garbage?"}
+                  </button>
+                  <a className="verify" href={`#/cleanup/${full.id}`}>Verify cleanup</a>
+                </div>
+              )}
             </section>
           );
         })()}
